@@ -22,9 +22,11 @@ def central_difference(f, *vals, arg=0, epsilon=1e-6):
     Returns:
        float : An approximation of :math:`f'_i(x_0, \ldots, x_{n-1})`
     """
-    # TODO: Implement for Task 1.1.
-    raise NotImplementedError('Need to implement for Task 1.1')
-
+    vals1 = list(vals)
+    vals1[arg] += epsilon
+    vals2 = list(vals)
+    vals2[arg] -= epsilon
+    return (f(*vals1) - f(*vals2))/ (2.* epsilon)
 
 ## Task 1.2 and 1.4
 ## Scalar Forward and Backward
@@ -57,41 +59,29 @@ class Scalar(Variable):
         return Mul.apply(self, Inv.apply(b))
 
     def __add__(self, b):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        return Add.apply(self, b)
+        
     def __lt__(self, b):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        return LT.apply(self, b)
+        
     def __gt__(self, b):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        raise GT.apply(self, b)
+        
     def __sub__(self, b):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
+        return Add.apply(self, Neg.apply(b))
 
     def __neg__(self):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        return Neg.apply(self)
+        
     def log(self):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
-    def exp(self):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        return Log.apply(self)
+        
     def sigmoid(self):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        return Sigmoid.apply(self)
+        
     def relu(self):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        return ReLU.apply(self)
+        
     def get_data(self):
         return self.data
 
@@ -171,92 +161,102 @@ class LT(ScalarFunction):
     def backward(ctx, d_output):
         return 0.0
 
+class GT(ScalarFunction):
+    "Greater-than function"
 
+    @staticmethod
+    def forward(ctx, a, b):
+        return 1.0 if a > b else 0.0
+
+    @staticmethod
+    def backward(ctx, d_output):
+        return 0.0
 # To implement.
 
 
 class Mul(ScalarFunction):
-    "Multiplication function"
-
     @staticmethod
     def forward(ctx, a, b):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        ctx.save_for_backward(a, b)
+        return operators.mul(a, b)
+    
     @staticmethod
     def backward(ctx, d_output):
-        # TODO: Implement for Task 1.4.
-        raise NotImplementedError('Need to implement for Task 1.4')
+        a, b = ctx.saved_values
+        return (
+            operators.mul(d_output, b), 
+            operators.mul(d_output, a)
+        )
 
 
 class Inv(ScalarFunction):
-    "Inverse function"
-
     @staticmethod
     def forward(ctx, a):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        ctx.save_for_backward(a)
+        return 1./a
+        
     @staticmethod
     def backward(ctx, d_output):
-        # TODO: Implement for Task 1.4.
-        raise NotImplementedError('Need to implement for Task 1.4')
+        a = ctx.saved_values
+        return (
+            operators.neg(d_output) / operators.mul(a, a), 
+        )
 
 
 class Neg(ScalarFunction):
-    "Negation function"
-
     @staticmethod
     def forward(ctx, a):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        return operators.neg(a)
+        
     @staticmethod
     def backward(ctx, d_output):
-        # TODO: Implement for Task 1.4.
-        raise NotImplementedError('Need to implement for Task 1.4')
+        return (
+            operators.neg(d_output),
+        )
 
 
 class Sigmoid(ScalarFunction):
-    "Sigmoid function"
-
     @staticmethod
     def forward(ctx, a):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        s = operators.sigmoid(a)
+        ctx.save_for_backward(s)
+        return s
+        
     @staticmethod
     def backward(ctx, d_output):
-        # TODO: Implement for Task 1.4.
-        raise NotImplementedError('Need to implement for Task 1.4')
+        s = ctx.saved_values
+        return (
+            operators.mul(d_output, operators.mul(s, 1 - s)),
+        )
 
 
 class ReLU(ScalarFunction):
-    "ReLU function"
-
     @staticmethod
     def forward(ctx, a):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        ctx.save_for_backward(a)
+        return operators.relu(a)
+        
     @staticmethod
     def backward(ctx, d_output):
-        # TODO: Implement for Task 1.4.
-        raise NotImplementedError('Need to implement for Task 1.4')
+        a = ctx.saved_values
+        return (
+            operators.relu_back(a, d_output),
+        )
 
 
 class Exp(ScalarFunction):
-    "Exp function"
-
     @staticmethod
     def forward(ctx, a):
-        # TODO: Implement for Task 1.2.
-        raise NotImplementedError('Need to implement for Task 1.2')
-
+        e = operators.exp(a)
+        ctx.save_for_backward(e)
+        return e
+        
     @staticmethod
     def backward(ctx, d_output):
-        # TODO: Implement for Task 1.4.
-        raise NotImplementedError('Need to implement for Task 1.4')
+        e = ctx.saved_values
+        return (
+            operators.mul(e, d_output),
+        )
 
 
 def derivative_check(f, *scalars):

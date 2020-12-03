@@ -1,6 +1,5 @@
 import uuid
 
-
 def wrap_tuple(x):
     if isinstance(x, tuple):
         return x
@@ -179,8 +178,8 @@ class FunctionBase:
             (see `is_constant` to remove unneeded variables)
 
         """
-        # TODO: Implement for Task 1.3.
-        raise NotImplementedError('Need to implement for Task 1.3')
+        bwd = wrap_tuple(cls.backward(ctx, d_output))
+        return [VariableWithDeriv(v, b) for v, b in zip(inputs, bwd)if isinstance(v, Variable)]
 
 
 def is_leaf(val):
@@ -189,7 +188,6 @@ def is_leaf(val):
 
 def is_constant(val):
     return not isinstance(val, Variable) or val.history is None
-
 
 def backpropagate(final_variable_with_deriv):
     """
@@ -202,5 +200,23 @@ def backpropagate(final_variable_with_deriv):
        final_variable_with_deriv (:class:`VariableWithDeriv`): The final variable
            and its derivative that we want to propagate backward to the leaves.
     """
-    # TODO: Implement for Task 1.4.
-    raise NotImplementedError('Need to implement for Task 1.4')
+    import queue
+    q = queue.SimpleQueue()
+    q.put_nowait(final_variable_with_deriv)
+    n2v = {}
+    while not q.empty():
+      vard = q.get_nowait()
+      der = vard.deriv
+      var = vard.variable
+      hist = var.history
+
+      if hist is not None:
+        if is_leaf(var):
+          var._add_deriv(der)
+          continue
+        for vind in hist.last_fn.chain_rule(hist.ctx, hist.inputs, der):
+          vin = vind.variable
+          if vin.name in n2v:
+            n2v[vin.name]._add_deriv(vind.deriv)
+          else:
+            q.put_nowait(vind)
